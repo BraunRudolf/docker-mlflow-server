@@ -20,10 +20,12 @@ jobs:
         run: docker run -d -p 5000:5000 my-mlflow-server:latest
       - name: Test Server Connectivity
         run: |
-          curl -s http://localhost:5000 | grep -q "MLflow" || echo "MLflow server not responding"
-          echo "First test passed"
-          curl -X POST http://localhost:5000/api/2.0/mlflow/experiments/create -H "Content-Type: application/json" -d '{"name": "my_experiment"}'
+          echo "Waiting for MLflow server to start ..."
+
+          curl -s http://localhost:5000 | grep -q "MLflow" || echo "MLflow server not responding" && exit 1
           echo "MLflow server is alive"
+          curl -X POST http://localhost:5000/api/2.0/mlflow/experiments/create -H "Content-Type: application/json" -d '{"name": "my_experiment"}'
+          echo "Test Experiment succesfully created!"
       - name: Stop Docker Container
         run: docker stop $(docker ps -q)
   push:
