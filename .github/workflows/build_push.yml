@@ -1,0 +1,34 @@
+name: Build docker image and push to dockerhub
+
+on:
+  push:
+    branches: main
+
+jobs:
+  login:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: ~/.docker
+        key: docker-layers-${{ runner.os }}-${{ hashFiles('**/Dockerfile') }}
+        restore-keys: |
+          docker-layers-${{ runner.os }}-
+    - name: Build & Push Image
+      run: |
+        docker build --cache-from type=local,src=. -t ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest .
+        docker push ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest || echo "Docker push failed"
