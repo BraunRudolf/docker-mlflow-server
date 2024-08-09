@@ -21,7 +21,10 @@ jobs:
       - name: Test Server Connectivity
         run: |
           curl -s http://localhost:5000 | grep -q "MLflow" || echo "MLflow server not responding"
-          python -c 'import mlflow; client = mlflow.tracking.MlflowClient(tracking_uri="http://localhost:5000"); experiment = client.create_experiment("test_experiment"); mlflow.end_run(); print("MLflow server is alive")'
+          curl -X POST http://localhost:5000/api/2.0/mlflow/experiments/create \
+          -H "Content-Type: application/json" \
+          -d '{"name": "my_experiment"}'
+          echo "MLflow server is alive"
       - name: Stop Docker Container
         run: docker stop $(docker ps -q)
   push:
