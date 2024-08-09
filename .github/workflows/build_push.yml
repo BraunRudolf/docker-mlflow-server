@@ -22,9 +22,7 @@ jobs:
         run: |
           curl -s http://localhost:5000 | grep -q "MLflow" || echo "MLflow server not responding"
           echo "First test passed"
-          curl -X POST http://localhost:5000/api/2.0/mlflow/experiments/create \
-          -H "Content-Type: application/json" \
-          -d '{"name": "my_experiment"}'
+          curl -X POST http://localhost:5000/api/2.0/mlflow/experiments/create -H "Content-Type: application/json" -d '{"name": "my_experiment"}'
           echo "MLflow server is alive"
       - name: Stop Docker Container
         run: docker stop $(docker ps -q)
