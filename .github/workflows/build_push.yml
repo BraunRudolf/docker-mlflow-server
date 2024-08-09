@@ -1,7 +1,9 @@
 name: Build, Test, and Push Docker Image
+
 on:
   push:
     branches: [main]
+
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
@@ -17,8 +19,8 @@ jobs:
       - name: Build Docker Image
         run: docker build -t ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest .
       - name: Run Docker Container
-        run: docker run -d -p 5000:5000 ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest
-      - name: Test Server Connectivity
+        run: docker run -d --name my-mlflow-server -p 5000:5000 ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest
+      - name: Wait for MLflow Server
         run: |
           echo "Waiting for MLflow server to start..."
           for i in {1..30}; do
@@ -28,21 +30,16 @@ jobs:
           done
           curl -s http://localhost:5000 | grep -q "MLflow" || (echo "MLflow server failed to start" && exit 1)
           echo "MLflow server is alive"
-      - name: Test Server Connectivity
+      - name: Test Server Functionality
         run: |
           curl -X POST http://localhost:5000/api/2.0/mlflow/experiments/create -H "Content-Type: application/json" -d '{"name": "my_experiment"}'
-          echo "Test Experiment succesfully created!"
+          echo "Test Experiment successfully created!"
       - name: Stop Docker Container
-        run: docker stop $(docker ps -q)
-  push:
-    needs: build_and_test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Login to Docker Hub
+        run: docker stop my-mlflow-server
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Push Image
         run: docker push ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest
+
