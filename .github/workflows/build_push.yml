@@ -1,34 +1,38 @@
-name: Build docker image and push to dockerhub
-
+name: Build, Test, and Push Docker Image
 on:
   push:
-    branches: main
-
+    branches: [main]
 jobs:
-  login:
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Login to Docker Hub
+      - uses: actions/checkout@v3
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: ~/.docker
+          key: docker-layers-${{ runner.os }}-${{ hashFiles('**/Dockerfile') }}
+          restore-keys: |
+            docker-layers-${{ runner.os }}-
+      - name: Build Docker Image
+        run: docker build -t my-mlflow-server:latest .
+      - name: Run Docker Container
+        run: docker run -d -p 5000:5000 my-mlflow-server:latest
+      - name: Test Server Connectivity
+        run: |
+          curl -s http://localhost:5000 | grep -q "MLflow" || echo "MLflow server not responding"
+          python -c 'import mlflow; client = mlflow.tracking.MlflowClient(tracking_uri="http://localhost:5000"); experiment = client.create_experiment("test_experiment"); mlflow.end_run(); print("MLflow server is alive")'
+      - name: Stop Docker Container
+        run: docker stop $(docker ps -q)
+  push:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: ~/.docker
-        key: docker-layers-${{ runner.os }}-${{ hashFiles('**/Dockerfile') }}
-        restore-keys: |
-          docker-layers-${{ runner.os }}-
-    - name: Build & Push Image
-      run: |
-        docker build --cache-from type=local,src=. -t ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest .
-        docker push ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest || echo "Docker push failed"
+      - name: Push Image
+        run: docker push ${{secrets.DOCKERHUB_USERNAME}}/mlflow-server:latest
