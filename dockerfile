@@ -12,10 +12,13 @@ RUN pip install --no-cache-dir poetry && \
 EXPOSE 5000
 
 # Set environment variables for MLflow
-ENV BACKEND_URI=sqlite:///mlflow/mlflow.db
+ENV BACKEND_URI=sqlite:////mlflow/mlflow.db
 ENV ARTIFACT_ROOT=/mlflow/artifacts
 
-# Command to run the MLflow server
-CMD ["sh", "-c", "poetry run mlflow server --backend-store-uri $BACKEND_URI --default-artifact-root $ARTIFACT_ROOT --host 0.0.0.0 --port 5000"]
-#CMD ["poetry", "run", "mlflow", "server", "--backend-store-uri", "$BACKEND_URI", "--default-artifact-root", "$ARTIFACT_ROOT", "--host", "0.0.0.0", "--port", "5000"]
+# Create a script to start the MLflow server
+RUN echo '#!/bin/sh\n\
+	exec poetry run mlflow server --backend-store-uri "$BACKEND_URI" --default-artifact-root "$ARTIFACT_ROOT" --host 0.0.0.0 --port 5000' > start_mlflow.sh && \
+	chmod +x start_mlflow.sh
 
+# Command to run the MLflow server
+CMD ["./start_mlflow.sh"]
