@@ -16,5 +16,6 @@ ENV BACKEND_URI=sqlite:///mlflow/mlflow.db
 ENV ARTIFACT_ROOT=/mlflow/artifacts
 
 # Command to run the MLflow server
-CMD ["poetry", "run", "mlflow", "server", "--backend-store-uri", "$BACKEND_URI", "--default-artifact-root", "$ARTIFACT_ROOT", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["sh", "-c", "poetry run mlflow server --backend-store-uri $BACKEND_URI --default-artifact-root $ARTIFACT_ROOT --host 0.0.0.0 --port 5000"]
+#CMD ["poetry", "run", "mlflow", "server", "--backend-store-uri", "$BACKEND_URI", "--default-artifact-root", "$ARTIFACT_ROOT", "--host", "0.0.0.0", "--port", "5000"]
 
